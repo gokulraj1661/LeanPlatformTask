@@ -22,6 +22,10 @@ public class UserController {
 	
 	@PostMapping("register")
     public String registerUser(@RequestBody ConsultantModel userRequest) {
+		boolean emailExists = clientRepository.existsByEmail(userRequest.getEmail()) || consultantRepository.existsByEmail(userRequest.getEmail());
+	    if (emailExists) {
+	        return "User with this email already exists!";
+	    }
         String role = userRequest.getRole();
         if ("client".equalsIgnoreCase(role)) {
         	ClientModel client=new ClientModel();

@@ -1,9 +1,10 @@
 package com.LeanPlatformTask.LPT.controller;
 
 import java.time.LocalDate;
+
 import java.time.LocalTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.LeanPlatformTask.LPT.dao.ConsultantRepo;
 import com.LeanPlatformTask.LPT.dao.SlotRepo;
-import com.LeanPlatformTask.LPT.model.ConsultantModel;
 import com.LeanPlatformTask.LPT.model.SlotModel;
 
 @RestController
@@ -25,28 +25,38 @@ public class SlotController {
 	ConsultantRepo consultantRepository;
 	@PostMapping("createslot")
 	public String createSlot(@RequestBody SlotModel slotRequest) {
-		Long consultantId = slotRequest.getConsultantId();
-		LocalDate slotDate=slotRequest.getDate();
-		LocalTime startTime=slotRequest.getStartTime();
-		LocalTime endtime=slotRequest.getEndtime();
-		
-		
-		if(consultantRepository.existsById(consultantId)) {
-			if (!slotRepository.existsByDateAndStartTimeAndEndtimeAndConsultantId(slotDate, startTime, endtime,consultantId)) {
-				
-			    SlotModel slot=new SlotModel();
-			    slot.setDate(slotRequest.getDate());
-			    slot.setStartTime(slotRequest.getStartTime());
-			    slot.setEndtime(slotRequest.getEndtime());
-			    slot.setBooked(slotRequest.isBooked());
-			    slot.setConsultantId(slotRequest.getConsultantId());
-			    slotRepository.save(slot);
-			    return "Slot created successfully";
-			}
-			return "Slot already exists";
-			
-		}else {
-			return "Consultant not found";
+		try {
+			Long consultantId = slotRequest.getConsultantId();
+		    LocalDate slotDate=slotRequest.getDate();
+		    LocalTime startTime=slotRequest.getStartTime();
+		    LocalTime endtime=slotRequest.getEndtime();
+		    
+		    if (consultantRepository.existsById(consultantId)) {
+		    	List<SlotModel> existingSlots = slotRepository.findByDateAndStartTimeAndEndtime(slotDate, startTime, endtime);
+	            boolean slotExistsWithSameConsultant = false;
+	            for (SlotModel existingSlot : existingSlots) {
+	            	if (existingSlot.getConsultantId().equals(consultantId)) {
+	            		slotExistsWithSameConsultant = true;
+	                    break;
+	                }
+	            }
+	            if (!slotExistsWithSameConsultant) {
+	            	SlotModel slot = new SlotModel();
+	                slot.setDate(slotRequest.getDate());
+	                slot.setStartTime(slotRequest.getStartTime());
+	                slot.setEndtime(slotRequest.getEndtime());
+	                slot.setBooked(slotRequest.isBooked());
+	                slot.setConsultantId(slotRequest.getConsultantId());
+	                slotRepository.save(slot);
+	            return "Slot created successfully";
+	            }else {
+	        	     return "Slot already exists with a different consultant";
+	            }
+	        } else {
+	             return "Consultant not found";
+	        }
+		}catch(Exception e){
+			return "Invalid date or time format entered!";
 		}
 	}
 	@GetMapping("searchconsultant")
