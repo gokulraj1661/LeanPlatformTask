@@ -4,6 +4,8 @@ import java.util.List;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,10 +23,10 @@ public class UserController {
 	ConsultantRepo  consultantRepository;
 	
 	@PostMapping("register")
-    public String registerUser(@RequestBody ConsultantModel userRequest) {
+    public ResponseEntity<String> registerUser(@RequestBody ConsultantModel userRequest) {
 		boolean emailExists = clientRepository.existsByEmail(userRequest.getEmail()) || consultantRepository.existsByEmail(userRequest.getEmail());
 	    if (emailExists) {
-	        return "User with this email already exists!";
+	        return ResponseEntity.status(HttpStatus.CONFLICT).body("User with this email already exists!");
 	    }
         String role = userRequest.getRole();
         if ("client".equalsIgnoreCase(role)) {
@@ -35,7 +37,7 @@ public class UserController {
         	client.setPhoneNo(userRequest.getPhoneNo());
         	client.setRole(userRequest.getRole());
             clientRepository.save(client);
-            return "Client registered successfully!";
+            return ResponseEntity.ok("Client registered successfully!");
         } else if ("consultant".equalsIgnoreCase(role)) {
         	ConsultantModel consultant=new ConsultantModel();
         	consultant.setName(userRequest.getName());
@@ -46,9 +48,9 @@ public class UserController {
         	consultant.setExperience(userRequest.getExperience());
         	consultant.setAreaOfExpertise(userRequest.getAreaOfExpertise());
             consultantRepository.save(consultant);
-            return "Consultant registered successfully!";
+            return ResponseEntity.ok("Consultant registered successfully!");
         } else {
-            return "Invalid role provided!";
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid role provided!");
         }
     }
 	@GetMapping("list/clients")
